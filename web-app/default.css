@@ -1,0 +1,107 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+h1 {
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.othello-board {
+    border-collapse: collapse;
+    background-color: #27ae60;
+    border: 6px solid #145a32;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border-radius: 4px;
+}
+
+.cell {
+    width: clamp(40px, 8vw, 65px);
+    height: clamp(40px, 8vw, 65px);
+    border: 1px solid #145a32;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0;
+    position: relative;
+}
+
+.disc {
+    width: 84%;
+    height: 84%;
+    border-radius: 50%;
+    margin: 8%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.disc.black {
+    background-color: #111;
+    box-shadow: inset -3px -3px 5px rgba(255,255,255,0.2), 2px 2px 5px rgba(0,0,0,0.5);
+    transform: scale(1);
+}
+
+.disc.white {
+    background-color: #eee;
+    box-shadow: inset -3px -3px 5px rgba(0,0,0,0.2), 2px 2px 5px rgba(0,0,0,0.5);
+    transform: scale(1);
+}
+
+.disc.valid-move {
+    background-color: rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transform: scale(0.4);
+}
+
+.disc.valid-move:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: scale(0.6);
+}
+
+.status-board {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 25px;
+    font-size: 1.2rem;
+    background: rgba(0,0,0,0.2);
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.player-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-disc {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-disc.black { background: #111; }
+.status-disc.white { background: #eee; }
+
+.active-turn {
+    font-weight: bold;
+    color: #f1c40f;
+}
