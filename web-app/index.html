@@ -1,16 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-gb">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Functional Othello</title>
+    <meta charset="utf-8">
+    <title>Othello | Web App</title>
     <link rel="stylesheet" href="default.css">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script type="module" src="main.js"></script>
 </head>
 <body>
-    <h1>Othello</h1>
-    <div id="app"></div>
+    <header>
+        <h1>Othello</h1>
+        <div id="status-display" role="status" aria-live="polite">Black's Turn</div>
+    </header>
     
-    <!-- Import main.js as an ES module -->
-    <script type="module" src="main.js"></script>
+    <main>
+        <div id="board-container" role="group" aria-label="Othello Board">
+            </div>
+    </main>
 </body>
 </html>

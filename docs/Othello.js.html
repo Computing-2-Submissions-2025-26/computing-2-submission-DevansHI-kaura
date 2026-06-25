@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>Othello.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="Othello.html">Othello</a><ul class='methods'><li data-type='method'><a href="Othello.html#.empty_state">empty_state</a></li><li data-type='method'><a href="Othello.html#.ply">ply</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#BOARD_SIZE">BOARD_SIZE</a></li><li><a href="global.html#DIRECTIONS">DIRECTIONS</a></li><li><a href="global.html#GameState">GameState</a></li><li><a href="global.html#Token">Token</a></li><li><a href="global.html#apply_flips">apply_flips</a></li><li><a href="global.html#blank_row">blank_row</a></li><li><a href="global.html#get_all_flips">get_all_flips</a></li><li><a href="global.html#get_cell">get_cell</a></li><li><a href="global.html#get_flips_in_direction">get_flips_in_direction</a></li><li><a href="global.html#get_valid_moves">get_valid_moves</a></li><li><a href="global.html#is_on_board">is_on_board</a></li><li><a href="global.html#is_valid_move">is_valid_move</a></li><li><a href="global.html#opponent">opponent</a></li><li><a href="global.html#set_cell">set_cell</a></li><li><a href="global.html#traverse">traverse</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">Othello.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import R from "./ramda.js";
+
+/**
+ * A purely functional, referentially transparent module
+ * for the game of Othello (Reversi).
+ * Contains no UI or DOM manipulation, strictly enforcing
+ * separation of concerns.
+ * @namespace Othello
+ * @author Devanshi Kaura
+ * @version 1.0.0
+ */
+const Othello = Object.create(null);
+
+/**
+ * Dimensions of the Othello board.
+ * @constant {number}
+ */
+const BOARD_SIZE = 8;
+
+/**
+ * Valid tokens for the board state.
+ * @enum {string}
+ */
+const Token = Object.freeze({
+    EMPTY: "empty",
+    BLACK: "black",
+    WHITE: "white"
+});
+
+/**
+ * Vectors representing the 8 valid directions for flanking.
+ * @constant {Array&lt;Array&lt;number>>}
+ */
+const DIRECTIONS = Object.freeze([
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1], [0, 1],
+    [1, -1], [1, 0], [1, 1]
+]);
+
+/**
+ * Generates an entirely blank row.
+ * @returns {Array&lt;string>}
+ */
+const blank_row = function () {
+    return R.repeat(Token.EMPTY, BOARD_SIZE);
+};
+
+/**
+ * Returns the opposite player's token.
+ * @param {string} token
+ * @returns {string}
+ */
+const opponent = function (token) {
+    if (token === Token.BLACK) {
+        return Token.WHITE;
+    }
+    return Token.BLACK;
+};
+
+/**
+ * Checks if a given coordinate is strictly within the board boundaries.
+ * Data-last functional design.
+ * @param {number} row
+ * @returns {function(number): boolean}
+ */
+const is_on_board = function (row) {
+    return function (col) {
+        const valid_r = row >= 0 &amp;&amp; row &lt; BOARD_SIZE;
+        const valid_c = col >= 0 &amp;&amp; col &lt; BOARD_SIZE;
+        return valid_r &amp;&amp; valid_c;
+    };
+};
+
+/**
+ * Safely retrieves a cell's token. Returns undefined if out of bounds.
+ * @param {number} row
+ * @returns {function(number): function(Array&lt;Array&lt;string>>):
+ * string | undefined}
+ */
+const get_cell = function (row) {
+    return function (col) {
+        return function (board) {
+            if (is_on_board(row)(col)) {
+                return board[row][col];
+            }
+            return undefined;
+        };
+    };
+};
+
+/**
+ * Non-mutating update of a specific cell in the 2D array.
+ * @param {string} token
+ * @returns {function(number): function(number): function(Array&lt;Array&lt;string>>):
+ * Array&lt;Array&lt;string>>}
+ */
+const set_cell = function (token) {
+    return function (row) {
+        return function (col) {
+            return function (board) {
+                const updated_row = R.update(col, token, board[row]);
+                return R.update(row, updated_row, board);
+            };
+        };
+    };
+};
+
+/**
+ * Traces a path across the board in a specific direction to find
+ * outflanked opponent discs. Returns an empty array if the path hits
+ * the board edge or an empty square before finding a matching player disc.
+ * @param {Array&lt;Array&lt;string>>} board
+ * @returns {function(string): function(number): function(number):
+ * function(number):
+ * function(number): function(Array&lt;Array&lt;number>>): Array&lt;Array&lt;number>>}
+ */
+const traverse = function (board) {
+    return function (player_token) {
+        return function (row) {
+            return function (col) {
+                return function (d_row) {
+                    return function (d_col) {
+                        return function (acc) {
+                            const next_r = row + d_row;
+                            const next_c = col + d_col;
+                            const get_c = get_cell(next_r)(next_c);
+                            const cell = get_c(board);
+
+                            if (!cell || cell === Token.EMPTY) {
+                                return [];
+                            }
+
+                            if (cell === player_token) {
+                                return acc;
+                            }
+
+                            const next_acc = [...acc, [next_r, next_c]];
+                            const step1 = traverse(board)(player_token);
+                            const next_step = step1(next_r)(next_c);
+
+                            return next_step(d_row)(d_col)(next_acc);
+                        };
+                    };
+                };
+            };
+        };
+    };
+};
+
+/**
+ * Gets the coordinates of all opponent discs that would be flipped
+ * in a single specified direction from a starting square.
+ * @param {Array&lt;Array&lt;string>>} board
+ * @returns {function(string): function(number): function(number):
+ * function(number): function(number): Array&lt;Array&lt;number>>}
+ */
+const get_flips_in_direction = function (board) {
+    return function (player_token) {
+        return function (row) {
+            return function (col) {
+                return function (d_row) {
+                    return function (d_col) {
+                        const step1 = traverse(board)(player_token);
+                        const get_path = step1(row)(col);
+                        return get_path(d_row)(d_col)([]);
+                    };
+                };
+            };
+        };
+    };
+};
+
+/**
+ * Collects coordinates of all opponent discs that will be outflanked
+ * and flipped across all 8 possible directions for a given move.
+ * @param {Array&lt;Array&lt;string>>} board
+ * @returns {function(string): function(number): function(number):
+ * Array&lt;Array&lt;number>>}
+ */
+const get_all_flips = function (board) {
+    return function (player_token) {
+        return function (row) {
+            return function (col) {
+                return R.chain(
+                    function (direction) {
+                        const d_row = direction[0];
+                        const d_col = direction[1];
+
+                        const step1 = get_flips_in_direction(board);
+                        const check_flips = step1(player_token);
+
+                        return check_flips(row)(col)(d_row)(d_col);
+                    },
+                    DIRECTIONS
+                );
+            };
+        };
+    };
+};
+
+/**
+ * Predicate checking if placing a piece at the specified row and column
+ * legally flanks at least one opponent piece according to Othello rules.
+ * @param {Array&lt;Array&lt;string>>} board
+ * @returns {function(string): function(number): function(number): boolean}
+ */
+const is_valid_move = function (board) {
+    return function (player_token) {
+        return function (row) {
+            return function (col) {
+                if (get_cell(row)(col)(board) !== Token.EMPTY) {
+                    return false;
+                }
+                const step1 = get_all_flips(board)(player_token);
+                return step1(row)(col).length > 0;
+            };
+        };
+    };
+};
+
+/**
+ * Returns all valid board coordinates `[row, col]` where a given player
+ * can legally place a disc.
+ * @param {Array&lt;Array&lt;string>>} board
+ * @returns {function(string): Array&lt;Array&lt;number>>}
+ */
+const get_valid_moves = function (board) {
+    return function (player_token) {
+        const range = R.range(0, BOARD_SIZE);
+        const all_coords = R.xprod(range, range);
+        return R.filter(
+            function (coord) {
+                const r = coord[0];
+                const c = coord[1];
+                return is_valid_move(board)(player_token)(r)(c);
+            },
+            all_coords
+        );
+    };
+};
+
+/**
+ * Flips a collection of outflanked opponent discs to the
+ * specified player's token.
+ * @param {string} token
+ * @returns {function(Array&lt;Array&lt;number>>): function(Array&lt;Array&lt;string>>):
+ * Array&lt;Array&lt;string>>}
+ */
+const apply_flips = function (token) {
+    return function (flips_array) {
+        return function (board) {
+            return R.reduce(
+                function (b, coord) {
+                    const r = coord[0];
+                    const c = coord[1];
+                    return set_cell(token)(r)(c)(b);
+                },
+                board,
+                flips_array
+            );
+        };
+    };
+};
+
+/**
+ * @typedef {Object} GameState
+ * @property {Array&lt;Array&lt;string>>} board - 8x8 grid of tokens
+ * @property {string} turn - Player whose turn it is next
+ * @property {boolean} is_game_over - True if neither player can move
+ */
+
+/**
+ * Initialises the standard Othello starting layout with the
+ * traditional 4 center pieces.
+ * @memberof Othello
+ * @function empty_state
+ * @returns {GameState}
+ */
+Othello.empty_state = function () {
+    const empty_board = R.map(function () {
+        return blank_row();
+    }, R.range(0, BOARD_SIZE));
+
+    // Setting the initial 4 pieces using function composition / piping
+    const setup_board = R.pipe(
+        set_cell(Token.WHITE)(3)(3),
+        set_cell(Token.BLACK)(3)(4),
+        set_cell(Token.BLACK)(4)(3),
+        set_cell(Token.WHITE)(4)(4)
+    )(empty_board);
+
+    return {
+        board: setup_board,
+        turn: Token.BLACK, // Black traditionally starts in Othello
+        is_game_over: false
+    };
+};
+
+/**
+ * Executes a single turn (ply) in the game of Othello.
+ * Placing a disc on the board flanks the opponent's discs, flips them to
+ * the current player's colour, and automatically passes the turn to the
+ * opponent. If the opponent has no valid moves, their turn is skipped.
+ * @memberof Othello
+ * @function ply
+ * @param {GameState} state
+ * @param {number} row
+ * @param {number} col
+ * @returns {GameState}
+ */
+Othello.ply = function (state) {
+    return function (row) {
+        return function (col) {
+            // Early Returns for exceptions/invalid conditions
+            if (state.is_game_over) {
+                return state;
+            }
+            if (get_cell(row)(col)(state.board) !== Token.EMPTY) {
+                return state;
+            }
+
+            const step1 = get_all_flips(state.board)(state.turn);
+            const flips = step1(row)(col);
+            if (flips.length === 0) {
+                return state;
+            }
+
+            // Happy Path (Apply piece and flips)
+            const place_piece = set_cell(state.turn)(row)(col);
+            const board_with_piece = place_piece(state.board);
+            const step2 = apply_flips(state.turn)(flips);
+            const new_board = step2(board_with_piece);
+
+            // Determine next turn dynamics (Skipping turn if no valid moves)
+            const next_turn_token = opponent(state.turn);
+            const next_moves = get_valid_moves(new_board)(next_turn_token);
+            const next_player_can_move = next_moves.length > 0;
+
+            const current_moves = get_valid_moves(new_board)(state.turn);
+            const current_player_can_move = current_moves.length > 0;
+
+            let final_turn = state.turn;
+            let game_over = false;
+
+            if (next_player_can_move) {
+                final_turn = next_turn_token;
+            } else if (!current_player_can_move) {
+                game_over = true;
+            }
+
+            return {
+                board: new_board,
+                turn: final_turn,
+                is_game_over: game_over
+            };
+        };
+    };
+};
+
+export default Object.freeze(Othello);</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Jun 25 2026 02:24:20 GMT+0100 (British Summer Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+    <link type="text/css" rel="stylesheet" href="custom.css">
+    
+</body>
+</html>
